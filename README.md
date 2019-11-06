@@ -1,0 +1,7 @@
+# GoBagOfWord
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/26c439fa8e58489c90829cf4ba12ecce)](https://www.codacy.com/manual/alessiosavi/GoBagOfWord?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=alessiosavi/GoBagOfWord&amp;utm_campaign=Badge_Grade)
+[![Go Report Card](https://goreportcard.com/badge/github.com/alessiosavi/GoBagOfWord)](https://goreportcard.com/report/github.com/alessiosavi/GoBagOfWord) [![GoDoc](https://godoc.org/github.com/alessiosavi/GoBagOfWord?status.svg)](https://godoc.org/github.com/alessiosavi/GoBagOfWord) [![License](https://img.shields.io/github/license/alessiosavi/GoBagOfWord)](https://img.shields.io/github/license/alessiosavi/GoBagOfWord) [![Version](https://img.shields.io/github/v/tag/alessiosavi/GoBagOfWord)](https://img.shields.io/github/v/tag/alessiosavi/GoBagOfWord) [![Code size](https://img.shields.io/github/languages/code-size/alessiosavi/GoBagOfWord)](https://img.shields.io/github/languages/code-size/alessiosavi/GoBagOfWord) [![Repo size](https://img.shields.io/github/repo-size/alessiosavi/GoBagOfWord)](https://img.shields.io/github/repo-size/alessiosavi/GoBagOfWord) [![Issue open](https://img.shields.io/github/issues/alessiosavi/GoBagOfWord)](https://img.shields.io/github/issues/alessiosavi/GoBagOfWord)
+[![Issue closed](https://img.shields.io/github/issues-closed/alessiosavi/GoBagOfWord)](https://img.shields.io/github/issues-closed/alessiosavi/GoBagOfWord)
+
+Simple tool for save the BoW for a set of document
