@@ -51,7 +51,7 @@ func CalculateIDF(docs []DocumentData) {
 				}
 			}
 			// log.Println("Word ["+key+"] is present [", wordPresent, "] among ", nDocument, " document")
-			idf := math.Log2(nDocument / wordPresent)
+			idf := math.Log2(nDocument + 1/wordPresent + 1)
 			_map := docs[i].Bow[key]
 			_map.IDF = idf
 			// (count_of_term_t_in_d) * ((log ((NUMBER_OF_DOCUMENTS + 1) / (Number_of_documents_where_t_appears +1 )) + 1)
@@ -97,13 +97,15 @@ func main() {
 			log.Fatal("Unable to read the data for ->" + file)
 		}
 		unwanted = []string{",", ":", ";", ".", "‘", "”", "“", "+", "»", "«", "<<", ">>", "?", "!"}
-		stopWords := []string{`i`, " me ", " my ", " myself ", " we ", " our ", " ours ", " ourselves ", " you ", " you're ", " you've ", " you'll ", " you'd ", " your ", " yours ", " yourself ", " yourselves ", " he ", " him ", " his ", " himself ", " she ", " she's ", " her ", " hers ", " herself ", " it ", " it's ", " its ", " itself ", " they ", " them ", " their ", " theirs ", " themselves ", " what ", " which ", " who ", " whom ", " this ", " that ", "that'll", " these ", " those ", " am ", " is ", " are ", " was ", " were ", " be ", " been ", " being ", " have ", " has ", " had ", " having ", " do ", " does ", " did ", " doing ", `a`, " an ", " the ", " and ", " but ", `if`, `or`, `because`, `as`, `until`, `while`, `of`, `at`, `by`, `for`, `with`, `about`, `against`, `between`, `into`, `through`, `during`, `before`, `after`, `above`, `below`, `to`, `from`, `up`, `down`, `in`, `out`, `on`, `off`, `over`, `under`, `again`, `further`, `then`, `once`, `here`, `there`, `when`, `where`, `why`, `how`, `all`, `any`, `both`, `each`, `few`, `more`, `most`, `other`, `some`, `such`, `no`, `nor`, `not`, `only`, `own`, `same`, `so`, `than`, `too`, `very`, `s`, `t`, `can`, `will`, `just`, `don`, "don`t", `should`, "should`ve", `now`, `d`, `ll`, `m`, `o`, `re`, `ve`, `y`, `ain`, `aren`, "aren`t", `couldn`, "couldn`t", `didn`, "didn`t", `doesn`, "doesn`t", `hadn`, "hadn`t", `hasn`, "hasn`t", `haven`, "haven`t", `isn`, "isn`t", `ma`, `mightn`, "mightn`t", `mustn`, "mustn't", `needn`, "needn't", `shan`, "shan't", `shouldn`, "shouldn't", `wasn`, "wasn't", `weren`, "weren't", `won`, "won't", `wouldn`, "wouldn't"}
-
+		// stopWords := []string{`i`, " me ", " my ", " myself ", " we ", " our ", " ours ", " ourselves ", " you ", " you're ", " you've ", " you'll ", " you'd ", " your ", " yours ", " yourself ", " yourselves ", " he ", " him ", " his ", " himself ", " she ", " she's ", " her ", " hers ", " herself ", " it ", " it's ", " its ", " itself ", " they ", " them ", " their ", " theirs ", " themselves ", " what ", " which ", " who ", " whom ", " this ", " that ", "that'll", " these ", " those ", " am ", " is ", " are ", " was ", " were ", " be ", " been ", " being ", " have ", " has ", " had ", " having ", " do ", " does ", " did ", " doing ", `a`, " an ", " the ", " and ", " but ", `if`, `or`, `because`, `as`, `until`, `while`, `of`, `at`, `by`, `for`, `with`, `about`, `against`, `between`, `into`, `through`, `during`, `before`, `after`, `above`, `below`, `to`, `from`, `up`, `down`, `in`, `out`, `on`, `off`, `over`, `under`, `again`, `further`, `then`, `once`, `here`, `there`, `when`, `where`, `why`, `how`, `all`, `any`, `both`, `each`, `few`, `more`, `most`, `other`, `some`, `such`, `no`, `nor`, `not`, `only`, `own`, `same`, `so`, `than`, `too`, `very`, `s`, `t`, `can`, `will`, `just`, `don`, "don`t", `should`, "should`ve", `now`, `d`, `ll`, `m`, `o`, `re`, `ve`, `y`, `ain`, `aren`, "aren`t", `couldn`, "couldn`t", `didn`, "didn`t", `doesn`, "doesn`t", `hadn`, "hadn`t", `hasn`, "hasn`t", `haven`, "haven`t", `isn`, "isn`t", `ma`, `mightn`, "mightn`t", `mustn`, "mustn't", `needn`, "needn't", `shan`, "shan't", `shouldn`, "shouldn't", `wasn`, "wasn't", `weren`, "weren't", `won`, "won't", `wouldn`, "wouldn't"}
+		stopWords := []string{}
 		docBow[i].Bow = StandardizeText(content, true, unwanted, stopWords)
 	}
 
 	// log.Println("Loaded: ", len(docBow))
 	CalculateIDF(docBow)
+	v1, v2 := FindSimilar(docBow[0], docBow[1])
+	log.Println("Cosine similarity -> ", CosineSimilarity(v1, v2))
 }
 
 // StandardizeText is delegated to generate the BoW for the given data
@@ -189,4 +191,51 @@ func LoadDocumentPath(dirpath string) []string {
 		// }
 	}
 	return files
+}
+
+// CosineSimilarity is delegated to calculate the Cosine Similarity for the given array
+func CosineSimilarity(a, b []float64) float64 {
+
+	if len(a) == 0 || len(b) == 0 {
+		log.Fatal("CosineSimilarity | Nil input data")
+	}
+
+	if len(a) != len(b) {
+		log.Fatal("CosineSimilarity | Input vectors have different size")
+	}
+
+	// Calculate numerator
+	var numerator float64
+	for i := range a {
+		numerator += a[i] * b[i]
+	}
+	// Caluclate first term of denominator
+	var den1 float64
+	for i := range a {
+		den1 += math.Pow(a[i], 2)
+	}
+	den1 = math.Sqrt(den1)
+	// Caluclate second term of denominator
+	var den2 float64
+	for i := range b {
+		den2 += math.Pow(b[i], 2)
+	}
+	den2 = math.Sqrt(den2)
+	result := numerator / (den1 * den2)
+	return result
+}
+
+func FindSimilar(doc1, doc2 DocumentData) ([]float64, []float64) {
+	var list1, list2 []float64
+	for key := range doc1.Bow {
+		if _, ok := doc2.Bow[key]; ok {
+			log.Printf("Key shared! -> " + key)
+			list1 = append(list1, doc1.Bow[key].Count)
+			list2 = append(list2, doc2.Bow[key].Count)
+		}
+	}
+	log.Println("List1-> ", list1)
+	log.Println("List2-> ", list2)
+
+	return list1, list2
 }
