@@ -20,7 +20,7 @@ type DocumentData struct {
 
 // BoW contains the word-count for each word
 type BoW struct {
-	// N. of times that the word appears
+	// N. of times that the word appears in the document
 	Count float64
 	// Frequencies in relation to the document
 	TF float64
@@ -51,9 +51,11 @@ func CalculateIDF(docs []DocumentData) {
 				}
 			}
 			// log.Println("Word ["+key+"] is present [", wordPresent, "] among ", nDocument, " document")
-			idf := math.Log(nDocument / wordPresent)
+			idf := math.Log2(nDocument / wordPresent)
 			_map := docs[i].Bow[key]
 			_map.IDF = idf
+			// (count_of_term_t_in_d) * ((log ((NUMBER_OF_DOCUMENTS + 1) / (Number_of_documents_where_t_appears +1 )) + 1)
+
 			_map.TFIDF = _map.IDF * _map.TF
 			docs[i].Bow[key] = _map
 			wordPresent = 0
@@ -138,15 +140,19 @@ func StandardizeText(data []byte, toLower bool, toRemove, stopWords []string) ma
 	// Split the text
 	words = strings.Fields(text)
 	total := float64(len(words))
-
+	var isStopWord bool
 	// Saving the frequencies for each word
 	for _, word := range words {
 		for i := range stopWords {
 			if stopWords[i] == word {
+				isStopWord = true
 				break
 			}
 		}
-		bow[word]++
+		if !isStopWord {
+			bow[word]++
+		}
+		isStopWord = false
 	}
 
 	// Initialize the BoW struct for save the data
