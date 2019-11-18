@@ -32,47 +32,43 @@ type BoW struct {
 
 //CalculateIDF is delegated to calculate the Inverse Document Frequency for each word
 func CalculateIDF(docs []DocumentData) {
-	// Number of total documents
-	var nDocument float64
-	// Number of doc that contains the word
-	var wordPresent float64
-	nDocument = float64(len(docs))
-	//  y := math.Log(2.7183)
-
-	// i is the index of the document
+	var (
+		// Number of total documents
+		nDocument float64 = float64(len(docs))
+		// Number of doc that contains the word
+		wordPresent float64
+	)
+	// i is the index of the i-th document
 	for i := range docs {
-		log.Println("Analzying TFIDF [" + docs[i].DocumentName + "]")
 		// key is the word that we are going to analyze
 		for key := range docs[i].Bow {
-			// Check how many time this word is present
+			// Check how many docs contains the word
 			for j := range docs {
 				if /*n*/ _, ok := docs[j].Bow[key]; ok {
 					wordPresent++ // += n.Count
 				}
 			}
 			// log.Println("Word ["+key+"] is present [", wordPresent, "] among ", nDocument, " document")
-			idf := math.Log2(nDocument + 1/wordPresent + 1)
+			idf := math.Log2(nDocument + 1/wordPresent + 1) // Avoid zero division
 			_map := docs[i].Bow[key]
 			_map.IDF = idf
 			// (count_of_term_t_in_d) * ((log ((NUMBER_OF_DOCUMENTS + 1) / (Number_of_documents_where_t_appears +1 )) + 1)
-
-			_map.TFIDF = _map.IDF * _map.TF
-			docs[i].Bow[key] = _map
+			_map.TFIDF = _map.TF * _map.IDF
 			wordPresent = 0
+			docs[i].Bow[key] = _map
 		}
+		log.Println("TFIDF analyzed for [" + docs[i].DocumentName + "]")
 	}
-
-	for i := range docs {
-		log.Println("-----")
-		log.Println("Docs [" + docs[i].DocumentName + "]")
-		log.Println(docs[i])
-		log.Println("-----")
-	}
-
+	// for i := range docs {
+	// 	log.Println("-----")
+	// 	log.Println("Docs [" + docs[i].DocumentName + "]")
+	// 	log.Println(docs[i])
+	// 	log.Println("-----")
+	// }
 }
 
 //const filepath string = "/opt/DEVOPS/WORKSPACE/Golang/GoGPUtils/testdata/files/dante.txt"
-const dirfolder string = "dataset"
+const dirfolder string = "/tmp/test"
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
@@ -87,6 +83,9 @@ func main() {
 	}
 
 	fileList := LoadDocumentPath(dirfolder)
+	if !(len(fileList) > 0) {
+		log.Fatal("Unable to find coument in path [" + dirfolder + "]")
+	}
 	docBow = make([]DocumentData, len(fileList))
 	for i, file := range fileList {
 		log.Println("Analyzing [" + file + "]")
@@ -97,15 +96,33 @@ func main() {
 			log.Fatal("Unable to read the data for ->" + file)
 		}
 		unwanted = []string{",", ":", ";", ".", "‘", "”", "“", "+", "»", "«", "<<", ">>", "?", "!"}
-		// stopWords := []string{`i`, " me ", " my ", " myself ", " we ", " our ", " ours ", " ourselves ", " you ", " you're ", " you've ", " you'll ", " you'd ", " your ", " yours ", " yourself ", " yourselves ", " he ", " him ", " his ", " himself ", " she ", " she's ", " her ", " hers ", " herself ", " it ", " it's ", " its ", " itself ", " they ", " them ", " their ", " theirs ", " themselves ", " what ", " which ", " who ", " whom ", " this ", " that ", "that'll", " these ", " those ", " am ", " is ", " are ", " was ", " were ", " be ", " been ", " being ", " have ", " has ", " had ", " having ", " do ", " does ", " did ", " doing ", `a`, " an ", " the ", " and ", " but ", `if`, `or`, `because`, `as`, `until`, `while`, `of`, `at`, `by`, `for`, `with`, `about`, `against`, `between`, `into`, `through`, `during`, `before`, `after`, `above`, `below`, `to`, `from`, `up`, `down`, `in`, `out`, `on`, `off`, `over`, `under`, `again`, `further`, `then`, `once`, `here`, `there`, `when`, `where`, `why`, `how`, `all`, `any`, `both`, `each`, `few`, `more`, `most`, `other`, `some`, `such`, `no`, `nor`, `not`, `only`, `own`, `same`, `so`, `than`, `too`, `very`, `s`, `t`, `can`, `will`, `just`, `don`, "don`t", `should`, "should`ve", `now`, `d`, `ll`, `m`, `o`, `re`, `ve`, `y`, `ain`, `aren`, "aren`t", `couldn`, "couldn`t", `didn`, "didn`t", `doesn`, "doesn`t", `hadn`, "hadn`t", `hasn`, "hasn`t", `haven`, "haven`t", `isn`, "isn`t", `ma`, `mightn`, "mightn`t", `mustn`, "mustn't", `needn`, "needn't", `shan`, "shan't", `shouldn`, "shouldn't", `wasn`, "wasn't", `weren`, "weren't", `won`, "won't", `wouldn`, "wouldn't"}
-		stopWords := []string{}
+		stopWords := []string{`i`, " me ", " my ", " myself ", " we ", " our ", " ours ", " ourselves ", " you ", " you're ", " you've ", " you'll ", " you'd ", " your ", " yours ", " yourself ", " yourselves ", " he ", " him ", " his ", " himself ", " she ", " she's ", " her ", " hers ", " herself ", " it ", " it's ", " its ", " itself ", " they ", " them ", " their ", " theirs ", " themselves ", " what ", " which ", " who ", " whom ", " this ", " that ", "that'll", " these ", " those ", " am ", " is ", " are ", " was ", " were ", " be ", " been ", " being ", " have ", " has ", " had ", " having ", " do ", " does ", " did ", " doing ", `a`, " an ", " the ", " and ", " but ", `if`, `or`, `because`, `as`, `until`, `while`, `of`, `at`, `by`, `for`, `with`, `about`, `against`, `between`, `into`, `through`, `during`, `before`, `after`, `above`, `below`, `to`, `from`, `up`, `down`, `in`, `out`, `on`, `off`, `over`, `under`, `again`, `further`, `then`, `once`, `here`, `there`, `when`, `where`, `why`, `how`, `all`, `any`, `both`, `each`, `few`, `more`, `most`, `other`, `some`, `such`, `no`, `nor`, `not`, `only`, `own`, `same`, `so`, `than`, `too`, `very`, `s`, `t`, `can`, `will`, `just`, `don`, "don`t", `should`, "should`ve", `now`, `d`, `ll`, `m`, `o`, `re`, `ve`, `y`, `ain`, `aren`, "aren`t", `couldn`, "couldn`t", `didn`, "didn`t", `doesn`, "doesn`t", `hadn`, "hadn`t", `hasn`, "hasn`t", `haven`, "haven`t", `isn`, "isn`t", `ma`, `mightn`, "mightn`t", `mustn`, "mustn't", `needn`, "needn't", `shan`, "shan't", `shouldn`, "shouldn't", `wasn`, "wasn't", `weren`, "weren't", `won`, "won't", `wouldn`, "wouldn't"}
+		//stopWords := []string{}
 		docBow[i].Bow = StandardizeText(content, true, unwanted, stopWords)
 	}
 
 	// log.Println("Loaded: ", len(docBow))
 	CalculateIDF(docBow)
-	v1, v2 := FindSimilar(docBow[0], docBow[1])
-	log.Println("Cosine similarity -> ", CosineSimilarity(v1, v2))
+	var wrong int
+	for i := 0; i < len(docBow); i++ {
+		for j := 0; j < len(docBow); j++ {
+			v1, v2, penalization := FindSimilar(docBow[i], docBow[j])
+			simil := CosineSimilarity(v1, v2) - penalization
+			if simil > 0.5 {
+				//log.Println("Document ["+docBow[i].DocumentName+"] is similar to ["+docBow[j].DocumentName+"] for a FACTOR: [", simil, "] with penalization: [", penalization, "]")
+				if strings.Contains(docBow[i].DocumentName, "sci") && strings.Contains(docBow[j].DocumentName, "soc") {
+					wrong++
+				}
+			} else {
+				if strings.Contains(docBow[i].DocumentName, "sci") && strings.Contains(docBow[j].DocumentName, "sci") {
+					wrong++
+				} else if strings.Contains(docBow[i].DocumentName, "soc") && strings.Contains(docBow[j].DocumentName, "soc") {
+					wrong++
+				}
+			}
+		}
+	}
+	log.Println("Wrongs -> ", wrong)
 }
 
 // StandardizeText is delegated to generate the BoW for the given data
@@ -163,7 +180,7 @@ func StandardizeText(data []byte, toLower bool, toRemove, stopWords []string) ma
 	// Save the RAW data into the struct and calculate the TF
 	for key, value := range bow {
 		// Count -> Number of times that the terms appear
-		// TermFrequency
+		// TermFrequency frequencies of the term
 		bowList[key] = BoW{Count: value, TF: value / total}
 		// log.Println("Bow -> ", bowList[key], " Key: ", key)
 	}
@@ -220,22 +237,29 @@ func CosineSimilarity(a, b []float64) float64 {
 	for i := range b {
 		den2 += math.Pow(b[i], 2)
 	}
+
 	den2 = math.Sqrt(den2)
 	result := numerator / (den1 * den2)
 	return result
 }
 
-func FindSimilar(doc1, doc2 DocumentData) ([]float64, []float64) {
+func FindSimilar(doc1, doc2 DocumentData) ([]float64, []float64, float64) {
 	var list1, list2 []float64
+	var penalization float64
 	for key := range doc1.Bow {
 		if _, ok := doc2.Bow[key]; ok {
-			log.Printf("Key shared! -> " + key)
+			//		log.Printf("Key shared! -> " + key)
 			list1 = append(list1, doc1.Bow[key].Count)
 			list2 = append(list2, doc2.Bow[key].Count)
+		} else {
+			//		log.Println("Key [" + key + "] is not shared!")
+			penalization += 1 / float64(len(doc1.Bow)+len(doc2.Bow))
+			//penalization++
 		}
 	}
-	log.Println("List1-> ", list1)
-	log.Println("List2-> ", list2)
+	//penalization = penalization / float64(len(doc1.Bow)+len(doc2.Bow))
+	// log.Println("List1-> ", list1)
+	// log.Println("List2-> ", list2)
 
-	return list1, list2
+	return list1, list2, penalization
 }
