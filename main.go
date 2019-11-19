@@ -13,6 +13,8 @@ import (
 
 // dictionary will contains the words related to all document
 var dictionary map[string]int = make(map[string]int)
+
+// replacer will take in charge to remove punctation
 var replacer *strings.Replacer
 
 // initPunctation is delegated to initialize the list of punctation to remove
@@ -225,19 +227,21 @@ func LoadDocumentPath(dirpath string) []string {
 
 	var files []string
 
-	for _, item := range filesList {
-		files = append(files, item)
-		// fileType, err := fileutils.GetFileContentType(item)
-		// if err != nil {
-		// 	log.Println("Error for file [" + item + "]")
-		// } else {
-		// 	if strings.HasPrefix(fileType, "text/plain") {
-		// 		files = append(files, item)
-		// 	} else {
-		// 		log.Println("File type for file [" + item + "] -> " + fileType)
-		// 	}
-		// }
-	}
+	files = append(files, filesList...)
+
+	// for _, item := range filesList {
+	// 	files = append(files, item)
+	// fileType, err := fileutils.GetFileContentType(item)
+	// if err != nil {
+	// 	log.Println("Error for file [" + item + "]")
+	// } else {
+	// 	if strings.HasPrefix(fileType, "text/plain") {
+	// 		files = append(files, item)
+	// 	} else {
+	// 		log.Println("File type for file [" + item + "] -> " + fileType)
+	// 	}
+	// }
+	// }
 
 	return files
 }
