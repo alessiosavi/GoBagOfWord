@@ -9,6 +9,8 @@ type DocumentData struct {
 	DocumentName string
 	// BoW of the document, the key is the word
 	Bow map[string]BoW
+	// TFIDF_VECTOR is delegated to save the TFIDF rappresentation of the document
+	TFIDF_VECTOR []float64
 }
 
 // BoW contains the word-count for each word

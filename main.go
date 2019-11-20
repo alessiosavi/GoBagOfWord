@@ -1,15 +1,24 @@
 package main
 
 import (
-	"bytes"
+	"encoding/csv"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
+	"os"
+	"sort"
 	"strings"
 
 	"github.com/alessiosavi/GoBagOfWord/datastructure"
 	fileutils "github.com/alessiosavi/GoGPUtils/files"
 )
+
+// Dataset will save the data that need to be classified
+type Dataset struct {
+	Label string
+	Data  string
+}
 
 // dictionary will contains the words related to all document
 var dictionary map[string]int = make(map[string]int)
@@ -89,19 +98,24 @@ func CalculateIDF(docs []datastructure.DocumentData) []datastructure.DocumentDat
 
 	// i is the index of the i-th document
 	for i := range docs {
+		log.Println("Analayzing doc [" + docs[i].DocumentName + "]")
 		// key is the word that we are going to analyze
 		for key := range docs[i].Bow {
 			wordPresent = 0
+			// log.Println("Analyzing word: " + key)
 			// Check how many docs contains the word
 			for j := range docs {
-				if /*n*/ _, ok := docs[j].Bow[key]; ok {
-					wordPresent++ // += n.Count
+				if n, ok := docs[j].Bow[key]; ok {
+					if n.Count > 0 {
+						wordPresent++ // += n.Count
+					}
 				}
 			}
-			// log.Println("Word ["+key+"] is present [", wordPresent, "] among ", nDocument, " document")
-			idf := math.Log2(nDocument / wordPresent)
+
+			//log.Println("Word ["+key+"] is present [", wordPresent, "] among ", nDocument, " document")
 			_map := docs[i].Bow[key]
-			_map.IDF = idf
+			_map.IDF = math.Log(nDocument / wordPresent)
+			// log.Println("IDF -> ", _map.IDF, "Total Doc:", nDocument, " Words Found:", wordPresent)
 			// (count_of_term_t_in_d) * ((log ((NUMBER_OF_DOCUMENTS + 1) / (Number_of_documents_where_t_appears +1 )) + 1)
 			_map.TFIDF = _map.TF * _map.IDF
 			docs[i].Bow[key] = _map
@@ -129,32 +143,41 @@ func main() {
 	}
 
 	// Load the document that have to be analyzed
-	fileList := LoadDocumentPath(dirfolder)
-	if !(len(fileList) > 0) {
-		log.Fatal("Unable to find document in path [" + dirfolder + "]")
-	}
-	docBow = make([]datastructure.DocumentData, len(fileList))
-	for i, file := range fileList {
-		log.Println("Analyzing [" + file + "]")
-		docBow[i].DocumentName = file
-		content, err := ioutil.ReadFile(file)
-		if err != nil {
-			log.Println("Unable to read the data for file [" + file + "]")
-		} else {
-			if !(len(content) > 0) {
-				log.Println("File [" + file + "] is empty!")
-			} else {
-				// Standardizing text and calculate BoW for the document corpus
-				docBow[i].Bow = StandardizeText(content, true)
-			}
-		}
+	// fileList := LoadDocumentPath(dirfolder)
+	// if !(len(fileList) > 0) {
+	// 	log.Fatal("Unable to find document in path [" + dirfolder + "]")
+	// }
+
+	var dataset []Dataset = loadCSV("/home/alessiosavi/Downloads/bbc-text.csv")
+
+	docBow = make([]datastructure.DocumentData, len(dataset))
+	for i := range dataset {
+		// log.Println("Analyzing [" + file + "]")
+		//  docBow[i].DocumentName = file
+		// content, err := ioutil.ReadFile(file)
+		// if err != nil {
+		// 	log.Println("Unable to read the data for file [" + file + "]")
+		// } else {
+		// 	if !(len(content) > 0) {
+		// 		log.Println("File [" + file + "] is empty!")
+		// 	} else {
+		// Standardizing text and calculate BoW for the document corpus
+		docBow[i].Bow = StandardizeText(dataset[i].Data, true)
+		// }
+		//	}
 	}
 
 	StandardizeDict(docBow)
 	docBow = CalculateIDF(docBow)
 	for i := range docBow {
-		log.Println(docBow[i])
+		docBow[i].TFIDF_VECTOR = retrieveTFIDFVector(docBow[i])
 	}
+
+	for i := range docBow {
+		log.Println("------------")
+		log.Println(docBow[i].TFIDF_VECTOR)
+	}
+
 }
 
 // StandardizeDict is delegated to standardize the terms that are present in all document
@@ -172,7 +195,7 @@ func StandardizeDict(docs []datastructure.DocumentData) []datastructure.Document
 }
 
 // StandardizeText is delegated to generate the BoW for the given data
-func StandardizeText(data []byte, toLower bool) map[string]datastructure.BoW {
+func StandardizeText(data string, toLower bool) map[string]datastructure.BoW {
 	var (
 		// This will contains the text standardized
 		text string
@@ -185,7 +208,7 @@ func StandardizeText(data []byte, toLower bool) map[string]datastructure.BoW {
 	)
 
 	if toLower {
-		data = bytes.ToLower(data)
+		data = strings.ToLower(data)
 	}
 	// Converting []byte in string
 	text = string(data)
@@ -244,4 +267,59 @@ func LoadDocumentPath(dirpath string) []string {
 	// }
 
 	return files
+}
+
+func retrieveTFIDFVector(doc datastructure.DocumentData) []float64 {
+
+	vect := make([]float64, len(doc.Bow))
+	keys := make([]string, len(doc.Bow))
+	i := 0
+	// Due to the fact that golang does not preserve
+	for key := range doc.Bow {
+		keys[i] = key
+		i++
+	}
+	sort.Strings(keys)
+	i = 0
+	for _, key := range keys {
+		vect[i] = doc.Bow[key].TFIDF
+		i++
+	}
+
+	return vect
+}
+
+func loadCSV(filename string) []Dataset {
+
+	var dataset []Dataset
+
+	// Open the file
+	csvfile, err := os.Open(filename)
+	if err != nil {
+		log.Fatalln("Couldn't open the csv file", err)
+	}
+
+	// Parse the file
+	r := csv.NewReader(csvfile)
+
+	var data Dataset
+	// Iterate through the records
+	var i int
+	for i = 0; i < 5; i++ {
+		// Read each record from csv
+		record, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		data.Label = record[0]
+		data.Data = record[1]
+		dataset = append(dataset, data)
+		//fmt.Printf("Question: %s Answer %s\n", dataset[i].Label, dataset[i].Data)
+	}
+
+	return dataset
 }
