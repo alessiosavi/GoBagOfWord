@@ -12,6 +12,7 @@ import (
 
 	"github.com/alessiosavi/GoBagOfWord/datastructure"
 	fileutils "github.com/alessiosavi/GoGPUtils/files"
+	mathutils "github.com/alessiosavi/GoGPUtils/math"
 )
 
 // Dataset will save the data that need to be classified
@@ -153,7 +154,8 @@ func main() {
 	docBow = make([]datastructure.DocumentData, len(dataset))
 	for i := range dataset {
 		// log.Println("Analyzing [" + file + "]")
-		//  docBow[i].DocumentName = file
+		docBow[i].DocumentName = dataset[i].Label
+		docBow[i].TEXT = dataset[i].Data
 		// content, err := ioutil.ReadFile(file)
 		// if err != nil {
 		// 	log.Println("Unable to read the data for file [" + file + "]")
@@ -173,9 +175,34 @@ func main() {
 		docBow[i].TFIDF_VECTOR = retrieveTFIDFVector(docBow[i])
 	}
 
+	// for i := range docBow {
+	// 	log.Println("------------")
+	// 	log.Println(docBow[i].TFIDF_VECTOR)
+	// }
+
+	// Check similarity between common data (same label)
+
+	var sameLabel []datastructure.DocumentData
 	for i := range docBow {
-		log.Println("------------")
-		log.Println(docBow[i].TFIDF_VECTOR)
+		if docBow[i].DocumentName == "politics" {
+			sameLabel = append(sameLabel, docBow[i])
+		}
+	}
+
+	for i := 0; i < len(sameLabel); i++ {
+		for j := i; j < len(sameLabel); j++ {
+			if i != j {
+				log.Println("___________")
+				cosSimil := mathutils.CosineSimilarity(sameLabel[i].TFIDF_VECTOR, sameLabel[j].TFIDF_VECTOR)
+				log.Println("Cosine: ", cosSimil)
+				log.Println("Euclidean: ", mathutils.EuclideanDistance(sameLabel[i].TFIDF_VECTOR, sameLabel[j].TFIDF_VECTOR))
+				log.Println("Manhattan: ", mathutils.ManhattanDistance(sameLabel[i].TFIDF_VECTOR, sameLabel[j].TFIDF_VECTOR))
+				if cosSimil < 0.005 {
+					log.Println("Text1: ", sameLabel[i].TEXT)
+					log.Println("Text2: ", sameLabel[j].TEXT)
+				}
+			}
+		}
 	}
 
 }
@@ -305,7 +332,7 @@ func loadCSV(filename string) []Dataset {
 	var data Dataset
 	// Iterate through the records
 	var i int
-	for i = 0; i < 5; i++ {
+	for i = 0; i < 100; i++ {
 		// Read each record from csv
 		record, err := r.Read()
 		if err == io.EOF {

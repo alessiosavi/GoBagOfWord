@@ -11,6 +11,8 @@ type DocumentData struct {
 	Bow map[string]BoW
 	// TFIDF_VECTOR is delegated to save the TFIDF rappresentation of the document
 	TFIDF_VECTOR []float64
+	// Document corpus
+	TEXT string
 }
 
 // BoW contains the word-count for each word
